@@ -29,21 +29,41 @@ client.configureDrainingFrequency(2)  # Mensajes por segundo
 client.configureConnectDisconnectTimeout(10)
 client.configureMQTTOperationTimeout(5)
 
-# Conectar
-client.connect()
 print("Conectado a AWS IoT Core")
 
 # Publicar un mensaje JSON en un topic
-topic = "sensor"
-mensaje = {
-    "temperatura": 23.4,
-    "unidad": "C",
-    "timestamp": int(time.time())
+topic = "action"
+def custom_callback(client, userdata, message):
+    print("\n--- Mensaje Recibido ---")
+    print(f"Topic: {message.topic}")
+    print(f"Payload: {message.payload.decode('utf-8')}") # Decodificar el payload de bytes a string
+    print(f"QoS: {message.qos}")
+    print("------------------------\n")
+
+# Conectar
+client.connect()
+
+subscribe_topic = "sensor" # O, por ejemplo, "comandos/dispositivo1"
+client.subscribe(subscribe_topic, 1, custom_callback)
+topicToSend = "message"
+
+
+message = {
+    "key": "hello world"
 }
 
-client.publish(topic, json.dumps(mensaje), 1)
-print("Mensaje publicado")
+client.publish(topicToSend, json.dumps(message), 1)
 
-# Esperar antes de desconectar
-time.sleep(2)
-client.disconnect()
+
+
+try:
+    print("Manteniendo la conexión abierta. Presiona Ctrl+C para salir.")
+    while True:
+        time.sleep(1) # Espera 1 segundo para no consumir CPU innecesariamente
+except KeyboardInterrupt:
+    print("\nDesconexión iniciada por el usuario.")
+    client.disconnect()
+    print("Desconectado de AWS IoT Core.")
+
+
+
